@@ -7,6 +7,8 @@
 #define MAX_BOOKS 100
 #define MAX_USERS 100
 #define MAX_STRING 100
+#define BORROW_DAYS 7
+#define PENALTY_PER_DAY 5
 
 // Structures
 typedef struct {
@@ -27,37 +29,65 @@ typedef struct {
     char password[MAX_STRING];
     int borrowedBookId;
     Date borrowDate;
+    int penalty;
 } User;
 
 // Global arrays
 Book books[MAX_BOOKS];
 User users[MAX_USERS];
 int bookCount = 0, userCount = 0;
-// Book Management Functions
 
+// Utility: Get today's date
+Date getTodayDate() {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    Date d = {tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900};
+    return d;
+}
+
+// Utility: Compare two dates
+int dateDiff(Date d1, Date d2) {
+    struct tm tm1 = {0, 0, 0, d1.day, d1.month - 1, d1.year - 1900};
+    struct tm tm2 = {0, 0, 0, d2.day, d2.month - 1, d2.year - 1900};
+    time_t t1 = mktime(&tm1);
+    time_t t2 = mktime(&tm2);
+    double diff = difftime(t2, t1);
+    return (int)(diff / (60 * 60 * 24));
+}
+
+// Book Management Functions
 void addBook() {
-    Book b;
-    printf("Enter book ID: ");
-    scanf("%d", &b.id);
-    printf("Enter title: ");
+    if (bookCount >= MAX_BOOKS) {
+        printf("Book storage full!\n");
+        return;
+    }
+
+    Book *b = &books[bookCount];
+    b->id = bookCount + 1;
+
+    printf("Enter book title: ");
     getchar(); // flush newline
-    fgets(b.title, MAX_STRING, stdin);
-    b.title[strcspn(b.title, "\n")] = '\0';
+    fgets(b->title, MAX_STRING, stdin);
+    b->title[strcspn(b->title, "\n")] = '\0';
+
     printf("Enter author: ");
-    fgets(b.author, MAX_STRING, stdin);
-    b.author[strcspn(b.author, "\n")] = '\0';
+    fgets(b->author, MAX_STRING, stdin);
+    b->author[strcspn(b->author, "\n")] = '\0';
+
     printf("Enter subject: ");
-    fgets(b.subject, MAX_STRING, stdin);
-    b.subject[strcspn(b.subject, "\n")] = '\0';
-    b.available = 1;
-    books[bookCount++] = b;
-    printf("Book added successfully.\n");
+    fgets(b->subject, MAX_STRING, stdin);
+    b->subject[strcspn(b->subject, "\n")] = '\0';
+
+    b->available = 1;
+    bookCount++;
+    printf("Book added with ID: %d\n", b->id);
 }
 
 void deleteBook() {
     int id;
     printf("Enter book ID to delete: ");
     scanf("%d", &id);
+
     int found = 0;
     for (int i = 0; i < bookCount; i++) {
         if (books[i].id == id) {
@@ -77,174 +107,42 @@ void updateBook() {
     int id;
     printf("Enter book ID to update: ");
     scanf("%d", &id);
+
     for (int i = 0; i < bookCount; i++) {
         if (books[i].id == id) {
             printf("Enter new title: ");
             getchar();
             fgets(books[i].title, MAX_STRING, stdin);
             books[i].title[strcspn(books[i].title, "\n")] = '\0';
+
             printf("Enter new author: ");
             fgets(books[i].author, MAX_STRING, stdin);
             books[i].author[strcspn(books[i].author, "\n")] = '\0';
+
             printf("Enter new subject: ");
             fgets(books[i].subject, MAX_STRING, stdin);
             books[i].subject[strcspn(books[i].subject, "\n")] = '\0';
+
             printf("Book updated.\n");
             return;
         }
     }
     printf("Book not found.\n");
 }
-// Utility: Get today's date
-Date getTodayDate() {
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    Date d = {tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900};
-    return d;
-}
 
-// Utility: Compare two dates
-int dateDiff(Date d1, Date d2) {
-    struct tm tm1 = {0, 0, 0, d1.day, d1.month - 1, d1.year - 1900};
-    struct tm tm2 = {0, 0, 0, d2.day, d2.month - 1, d2.year - 1900};
-    time_t t1 = mktime(&tm1);
-    time_t t2 = mktime(&tm2);
-    double diff = difftime(t2, t1);
-    return (int)(diff / (60 * 60 * 24));
-}
-
-// Add a book
-void addBook() {
-    if (bookCount >= MAX_BOOKS) {
-        printf("Book storage full!\n");
+void viewBooks() {
+    if (bookCount == 0) {
+        printf("No books available.\n");
         return;
     }
-
-    books[bookCount].id = bookCount + 1;
-    printf("Enter book title: ");
-    getchar(); // flush newline
-    fgets(books[bookCount].title, MAX_STRING, stdin);
-    strtok(books[bookCount].title, "\n");
-
-    printf("Enter author: ");
-    fgets(books[bookCount].author, MAX_STRING, stdin);
-    strtok(books[bookCount].author, "\n");
-
-    printf("Enter subject: ");
-    fgets(books[bookCount].subject, MAX_STRING, stdin);
-    strtok(books[bookCount].subject, "\n");
-
-    books[bookCount].available = 1;
-    printf("Book added with ID: %d\n", books[bookCount].id);
-    bookCount++;
-}
-
-// Register user
-void registerUser() {
-    if (userCount >= MAX_USERS) {
-        printf("User limit reached!\n");
-        return;
-    }
-
-    users[userCount].id = userCount + 1;
-    printf("Enter user name: ");
-    getchar();
-    fgets(users[userCount].name, MAX_STRING, stdin);
-    strtok(users[userCount].name, "\n");
-
-    printf("Enter password: ");
-    fgets(users[userCount].password, MAX_STRING, stdin);
-    strtok(users[userCount].password, "\n");
-
-    users[userCount].borrowedBookId = -1;
-    printf("User registered with ID: %d\n", users[userCount].id);
-    userCount++;
-}
-// Helper: Find user index by ID
-int findUserById(int id) {
-    for (int i = 0; i < userCount; i++) {
-        if (users[i].id == id) return i;
-    }
-    return -1;
-}
-
-// Helper: Find book index by ID
-int findBookById(int id) {
+    printf("All Books:\n");
     for (int i = 0; i < bookCount; i++) {
-        if (books[i].id == id) return i;
+        printf("ID: %d | Title: %s | Author: %s | Subject: %s | Available: %s\n",
+            books[i].id, books[i].title, books[i].author, books[i].subject,
+            books[i].available ? "Yes" : "No");
     }
-    return -1;
 }
 
-// Borrow book
-void borrowBook() {
-    int userId, bookId;
-    printf("Enter your user ID: ");
-    scanf("%d", &userId);
-    int uIndex = findUserById(userId);
-    if (uIndex == -1) {
-        printf("User not found.\n");
-        return;
-    }
-
-    if (users[uIndex].borrowedBookId != -1) {
-        printf("You already borrowed a book (ID: %d).\n", users[uIndex].borrowedBookId);
-        return;
-    }
-
-    printf("Enter Book ID to borrow: ");
-    scanf("%d", &bookId);
-    int bIndex = findBookById(bookId);
-    if (bIndex == -1) {
-        printf("Book not found.\n");
-        return;
-    }
-
-    if (!books[bIndex].available) {
-        printf("Book is not available.\n");
-        return;
-    }
-
-    books[bIndex].available = 0;
-    users[uIndex].borrowedBookId = bookId;
-
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    users[uIndex].borrowDate.day = tm.tm_mday;
-    users[uIndex].borrowDate.month = tm.tm_mon + 1;
-    users[uIndex].borrowDate.year = tm.tm_year + 1900;
-
-    printf("Book borrowed successfully on %02d-%02d-%d.\n",
-        users[uIndex].borrowDate.day,
-        users[uIndex].borrowDate.month,
-        users[uIndex].borrowDate.year);
-}
-
-// Return book
-void returnBook() {
-    int userId;
-    printf("Enter your user ID: ");
-    scanf("%d", &userId);
-    int uIndex = findUserById(userId);
-    if (uIndex == -1) {
-        printf("User not found.\n");
-        return;
-    }
-
-    if (users[uIndex].borrowedBookId == -1) {
-        printf("You have no book to return.\n");
-        return;
-    }
-
-    int bIndex = findBookById(users[uIndex].borrowedBookId);
-    if (bIndex != -1) {
-        books[bIndex].available = 1;
-    }
-
-    printf("Book ID %d returned successfully.\n", users[uIndex].borrowedBookId);
-    users[uIndex].borrowedBookId = -1;
-}
-// Search books by title or subject keyword
 void searchBooks() {
     char keyword[MAX_STRING];
     printf("Enter keyword to search (title or subject): ");
@@ -267,21 +165,165 @@ void searchBooks() {
     }
 }
 
-// View all books
-void viewBooks() {
-    if (bookCount == 0) {
-        printf("No books available.\n");
+// User Management
+void registerUser() {
+    if (userCount >= MAX_USERS) {
+        printf("User limit reached!\n");
         return;
     }
-    printf("All Books:\n");
-    for (int i = 0; i < bookCount; i++) {
-        printf("ID: %d | Title: %s | Author: %s | Subject: %s | Available: %s\n",
-            books[i].id, books[i].title, books[i].author, books[i].subject,
-            books[i].available ? "Yes" : "No");
-    }
+
+    User *u = &users[userCount];
+    u->id = userCount + 1;
+
+    printf("Enter user name: ");
+    getchar();
+    fgets(u->name, MAX_STRING, stdin);
+    u->name[strcspn(u->name, "\n")] = '\0';
+
+    printf("Enter password: ");
+    fgets(u->password, MAX_STRING, stdin);
+    u->password[strcspn(u->password, "\n")] = '\0';
+
+    u->borrowedBookId = -1;
+    u->penalty = 0;
+    userCount++;
+    printf("User registered with ID: %d\n", u->id);
 }
 
-// Main menu loop
+int findUserById(int id) {
+    for (int i = 0; i < userCount; i++) {
+        if (users[i].id == id) return i;
+    }
+    return -1;
+}
+
+int findBookById(int id) {
+    for (int i = 0; i < bookCount; i++) {
+        if (books[i].id == id) return i;
+    }
+    return -1;
+}
+
+// Borrow book
+void borrowBook() {
+    int userId, bookId;
+    printf("Enter your user ID: ");
+    scanf("%d", &userId);
+    int uIndex = findUserById(userId);
+    if (uIndex == -1) {
+        printf("User not found.\n");
+        return;
+    }
+    if (users[uIndex].borrowedBookId != -1) {
+        printf("You already borrowed a book (ID: %d).\n", users[uIndex].borrowedBookId);
+        return;
+    }
+
+    printf("Enter Book ID to borrow: ");
+    scanf("%d", &bookId);
+    int bIndex = findBookById(bookId);
+    if (bIndex == -1) {
+        printf("Book not found.\n");
+        return;
+    }
+    if (!books[bIndex].available) {
+        printf("Book is not available.\n");
+        return;
+    }
+
+    books[bIndex].available = 0;
+    users[uIndex].borrowedBookId = bookId;
+    users[uIndex].borrowDate = getTodayDate();
+    users[uIndex].penalty = 0;
+
+    printf("Book borrowed successfully on %02d-%02d-%d.\n",
+        users[uIndex].borrowDate.day,
+        users[uIndex].borrowDate.month,
+        users[uIndex].borrowDate.year);
+}
+
+// Return book with penalty calculation
+void returnBook() {
+    int userId;
+    printf("Enter your user ID: ");
+    scanf("%d", &userId);
+    int uIndex = findUserById(userId);
+    if (uIndex == -1) {
+        printf("User not found.\n");
+        return;
+    }
+    if (users[uIndex].borrowedBookId == -1) {
+        printf("You have no book to return.\n");
+        return;
+    }
+
+    int bIndex = findBookById(users[uIndex].borrowedBookId);
+    if (bIndex != -1) {
+        books[bIndex].available = 1;
+    }
+
+    Date today = getTodayDate();
+    int daysBorrowed = dateDiff(users[uIndex].borrowDate, today);
+
+    if (daysBorrowed > BORROW_DAYS) {
+        users[uIndex].penalty = (daysBorrowed - BORROW_DAYS) * PENALTY_PER_DAY;
+    } else {
+        users[uIndex].penalty = 0;
+    }
+
+    printf("Book ID %d returned successfully.\n", users[uIndex].borrowedBookId);
+    printf("Days borrowed: %d\n", daysBorrowed);
+    if (users[uIndex].penalty > 0) {
+        printf("Late return penalty: %d\n", users[uIndex].penalty);
+    } else {
+        printf("No penalty.\n");
+    }
+
+    users[uIndex].borrowedBookId = -1;
+}
+
+// File operations
+void saveBooksToFile() {
+    FILE *fp = fopen("books.dat", "wb");
+    if (!fp) {
+        printf("Failed to save books.\n");
+        return;
+    }
+    fwrite(&bookCount, sizeof(int), 1, fp);
+    fwrite(books, sizeof(Book), bookCount, fp);
+    fclose(fp);
+}
+
+void loadBooksFromFile() {
+    FILE *fp = fopen("books.dat", "rb");
+    if (!fp) return;  // First run: file may not exist
+
+    fread(&bookCount, sizeof(int), 1, fp);
+    fread(books, sizeof(Book), bookCount, fp);
+    fclose(fp);
+}
+
+void saveUsersToFile() {
+    FILE *fp = fopen("users.dat", "wb");
+    if (!fp) {
+        printf("Failed to save users.\n");
+        return;
+    }
+    fwrite(&userCount, sizeof(int), 1, fp);
+    fwrite(users, sizeof(User), userCount, fp);
+    fclose(fp);
+}
+
+void loadUsersFromFile() {
+    FILE *fp = fopen("users.dat", "rb");
+    if (!fp) return;
+
+    fread(&userCount, sizeof(int), 1, fp);
+    fread(users, sizeof(User), userCount, fp);
+    fclose(fp);
+}
+
+// Main menu
 void mainMenu() {
     int choice;
     while (1) {
@@ -317,53 +359,16 @@ void mainMenu() {
 }
 
 int main() {
+    loadBooksFromFile();
+    loadUsersFromFile();
+
+    printf("Welcome to the Library Management System!\n");
     mainMenu();
+
+    saveBooksToFile();
+    saveUsersToFile();
+
+    printf("Thank you for using the system. Goodbye!\n");
     return 0;
 }
-// Save books array to file
-void saveBooksToFile() {
-    FILE *fp = fopen("books.dat", "wb");
-    if (!fp) {
-        printf("Failed to save books.\n");
-        return;
-    }
-    fwrite(&bookCount, sizeof(int), 1, fp);
-    fwrite(books, sizeof(Book), bookCount, fp);
-    fclose(fp);
-}
-
-// Load books array from file
-void loadBooksFromFile() {
-    FILE *fp = fopen("books.dat", "rb");
-    if (!fp) {
-        // File might not exist on first run - not an error
-        return;
-    }
-    fread(&bookCount, sizeof(int), 1, fp);
-    fread(books, sizeof(Book), bookCount, fp);
-    fclose(fp);
-}
-
-// Save users array to file
-void saveUsersToFile() {
-    FILE *fp = fopen("users.dat", "wb");
-    if (!fp) {
-        printf("Failed to save users.\n");
-        return;
-    }
-    fwrite(&userCount, sizeof(int), 1, fp);
-    fwrite(users, sizeof(User), userCount, fp);
-    fclose(fp);
-}
-
-// Load users array from file
-void loadUsersFromFile() {
-    FILE *fp = fopen("users.dat", "rb");
-    if (!fp) {
-        // File might not exist on first run - not an error
-        return;
-    }
-    fread(&userCount, sizeof(int), 1, fp);
-    fread(users, sizeof(User), userCount, fp);
-    fclose(fp);
-}
+// End of library.c
