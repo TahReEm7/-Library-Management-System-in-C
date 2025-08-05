@@ -160,3 +160,87 @@ void registerUser() {
     printf("User registered with ID: %d\n", users[userCount].id);
     userCount++;
 }
+// Helper: Find user index by ID
+int findUserById(int id) {
+    for (int i = 0; i < userCount; i++) {
+        if (users[i].id == id) return i;
+    }
+    return -1;
+}
+
+// Helper: Find book index by ID
+int findBookById(int id) {
+    for (int i = 0; i < bookCount; i++) {
+        if (books[i].id == id) return i;
+    }
+    return -1;
+}
+
+// Borrow book
+void borrowBook() {
+    int userId, bookId;
+    printf("Enter your user ID: ");
+    scanf("%d", &userId);
+    int uIndex = findUserById(userId);
+    if (uIndex == -1) {
+        printf("User not found.\n");
+        return;
+    }
+
+    if (users[uIndex].borrowedBookId != -1) {
+        printf("You already borrowed a book (ID: %d).\n", users[uIndex].borrowedBookId);
+        return;
+    }
+
+    printf("Enter Book ID to borrow: ");
+    scanf("%d", &bookId);
+    int bIndex = findBookById(bookId);
+    if (bIndex == -1) {
+        printf("Book not found.\n");
+        return;
+    }
+
+    if (!books[bIndex].available) {
+        printf("Book is not available.\n");
+        return;
+    }
+
+    books[bIndex].available = 0;
+    users[uIndex].borrowedBookId = bookId;
+
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    users[uIndex].borrowDate.day = tm.tm_mday;
+    users[uIndex].borrowDate.month = tm.tm_mon + 1;
+    users[uIndex].borrowDate.year = tm.tm_year + 1900;
+
+    printf("Book borrowed successfully on %02d-%02d-%d.\n",
+        users[uIndex].borrowDate.day,
+        users[uIndex].borrowDate.month,
+        users[uIndex].borrowDate.year);
+}
+
+// Return book
+void returnBook() {
+    int userId;
+    printf("Enter your user ID: ");
+    scanf("%d", &userId);
+    int uIndex = findUserById(userId);
+    if (uIndex == -1) {
+        printf("User not found.\n");
+        return;
+    }
+
+    if (users[uIndex].borrowedBookId == -1) {
+        printf("You have no book to return.\n");
+        return;
+    }
+
+    int bIndex = findBookById(users[uIndex].borrowedBookId);
+    if (bIndex != -1) {
+        books[bIndex].available = 1;
+    }
+
+    printf("Book ID %d returned successfully.\n", users[uIndex].borrowedBookId);
+    users[uIndex].borrowedBookId = -1;
+}
