@@ -244,3 +244,79 @@ void returnBook() {
     printf("Book ID %d returned successfully.\n", users[uIndex].borrowedBookId);
     users[uIndex].borrowedBookId = -1;
 }
+// Search books by title or subject keyword
+void searchBooks() {
+    char keyword[MAX_STRING];
+    printf("Enter keyword to search (title or subject): ");
+    getchar(); // clear buffer
+    fgets(keyword, MAX_STRING, stdin);
+    keyword[strcspn(keyword, "\n")] = 0;
+
+    int found = 0;
+    printf("Search Results:\n");
+    for (int i = 0; i < bookCount; i++) {
+        if (strstr(books[i].title, keyword) != NULL || strstr(books[i].subject, keyword) != NULL) {
+            printf("ID: %d | Title: %s | Author: %s | Subject: %s | Available: %s\n",
+                books[i].id, books[i].title, books[i].author, books[i].subject,
+                books[i].available ? "Yes" : "No");
+            found = 1;
+        }
+    }
+    if (!found) {
+        printf("No books found with keyword '%s'.\n", keyword);
+    }
+}
+
+// View all books
+void viewBooks() {
+    if (bookCount == 0) {
+        printf("No books available.\n");
+        return;
+    }
+    printf("All Books:\n");
+    for (int i = 0; i < bookCount; i++) {
+        printf("ID: %d | Title: %s | Author: %s | Subject: %s | Available: %s\n",
+            books[i].id, books[i].title, books[i].author, books[i].subject,
+            books[i].available ? "Yes" : "No");
+    }
+}
+
+// Main menu loop
+void mainMenu() {
+    int choice;
+    while (1) {
+        printf("\n=== Library Management System ===\n");
+        printf("1. Register User\n");
+        printf("2. Add Book\n");
+        printf("3. View All Books\n");
+        printf("4. Search Books\n");
+        printf("5. Borrow Book\n");
+        printf("6. Return Book\n");
+        printf("7. Update Book\n");
+        printf("8. Delete Book\n");
+        printf("9. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: registerUser(); break;
+            case 2: addBook(); break;
+            case 3: viewBooks(); break;
+            case 4: searchBooks(); break;
+            case 5: borrowBook(); break;
+            case 6: returnBook(); break;
+            case 7: updateBook(); break;
+            case 8: deleteBook(); break;
+            case 9:
+                printf("Exiting program. Goodbye!\n");
+                return;
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+    }
+}
+
+int main() {
+    mainMenu();
+    return 0;
+}
