@@ -95,3 +95,68 @@ void updateBook() {
     }
     printf("Book not found.\n");
 }
+// Utility: Get today's date
+Date getTodayDate() {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    Date d = {tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900};
+    return d;
+}
+
+// Utility: Compare two dates
+int dateDiff(Date d1, Date d2) {
+    struct tm tm1 = {0, 0, 0, d1.day, d1.month - 1, d1.year - 1900};
+    struct tm tm2 = {0, 0, 0, d2.day, d2.month - 1, d2.year - 1900};
+    time_t t1 = mktime(&tm1);
+    time_t t2 = mktime(&tm2);
+    double diff = difftime(t2, t1);
+    return (int)(diff / (60 * 60 * 24));
+}
+
+// Add a book
+void addBook() {
+    if (bookCount >= MAX_BOOKS) {
+        printf("Book storage full!\n");
+        return;
+    }
+
+    books[bookCount].id = bookCount + 1;
+    printf("Enter book title: ");
+    getchar(); // flush newline
+    fgets(books[bookCount].title, MAX_STRING, stdin);
+    strtok(books[bookCount].title, "\n");
+
+    printf("Enter author: ");
+    fgets(books[bookCount].author, MAX_STRING, stdin);
+    strtok(books[bookCount].author, "\n");
+
+    printf("Enter subject: ");
+    fgets(books[bookCount].subject, MAX_STRING, stdin);
+    strtok(books[bookCount].subject, "\n");
+
+    books[bookCount].available = 1;
+    printf("Book added with ID: %d\n", books[bookCount].id);
+    bookCount++;
+}
+
+// Register user
+void registerUser() {
+    if (userCount >= MAX_USERS) {
+        printf("User limit reached!\n");
+        return;
+    }
+
+    users[userCount].id = userCount + 1;
+    printf("Enter user name: ");
+    getchar();
+    fgets(users[userCount].name, MAX_STRING, stdin);
+    strtok(users[userCount].name, "\n");
+
+    printf("Enter password: ");
+    fgets(users[userCount].password, MAX_STRING, stdin);
+    strtok(users[userCount].password, "\n");
+
+    users[userCount].borrowedBookId = -1;
+    printf("User registered with ID: %d\n", users[userCount].id);
+    userCount++;
+}
