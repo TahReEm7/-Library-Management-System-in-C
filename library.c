@@ -320,3 +320,50 @@ int main() {
     mainMenu();
     return 0;
 }
+// Save books array to file
+void saveBooksToFile() {
+    FILE *fp = fopen("books.dat", "wb");
+    if (!fp) {
+        printf("Failed to save books.\n");
+        return;
+    }
+    fwrite(&bookCount, sizeof(int), 1, fp);
+    fwrite(books, sizeof(Book), bookCount, fp);
+    fclose(fp);
+}
+
+// Load books array from file
+void loadBooksFromFile() {
+    FILE *fp = fopen("books.dat", "rb");
+    if (!fp) {
+        // File might not exist on first run - not an error
+        return;
+    }
+    fread(&bookCount, sizeof(int), 1, fp);
+    fread(books, sizeof(Book), bookCount, fp);
+    fclose(fp);
+}
+
+// Save users array to file
+void saveUsersToFile() {
+    FILE *fp = fopen("users.dat", "wb");
+    if (!fp) {
+        printf("Failed to save users.\n");
+        return;
+    }
+    fwrite(&userCount, sizeof(int), 1, fp);
+    fwrite(users, sizeof(User), userCount, fp);
+    fclose(fp);
+}
+
+// Load users array from file
+void loadUsersFromFile() {
+    FILE *fp = fopen("users.dat", "rb");
+    if (!fp) {
+        // File might not exist on first run - not an error
+        return;
+    }
+    fread(&userCount, sizeof(int), 1, fp);
+    fread(users, sizeof(User), userCount, fp);
+    fclose(fp);
+}
